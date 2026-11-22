@@ -38,6 +38,7 @@ var (
 		Bold(true).
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("#cc6666")).
+		BorderBackground(lipgloss.Color("#282a2e")).
 		Padding(1, 2)
 )
 
@@ -152,8 +153,29 @@ func (m model) View() tea.View {
 }
 
 func main() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("failed to access user home dir: %v", err)
+	}
+
+	configDir := os.Getenv("TORCHSONG_CONFIG_DIR")
+	if configDir == "" {
+		configDir, err = os.UserConfigDir()
+		if err != nil {
+			log.Fatalf("config directory doesnt exist: %v", err)
+		}
+	}
+	tsConfigDir := filepath.Join(configDir, "torchsong")
+	exists, err := internal.DirExists(tsConfigDir)
+	if err != nil {
+		log.Fatalf("failed to read torch song dir: %v", err)
+	}
+	if !exists {
+		log.Fatal("no config file to be read")
+	}
+	configPath := filepath.Join(configDir, "torchsong", "config.toml")
 	config := make(map[string]any)
-	_, err := toml.DecodeFile("config.toml", &config)
+	_, err = toml.DecodeFile(configPath, &config)
 	if err != nil {
 		log.Fatalf("failed to parse config: %v", err)
 	}
@@ -161,7 +183,6 @@ func main() {
 	Dir := config["Directory"].(map[string]any)
 	music := Dir["path"].(string)
 
-	homeDir, _ := os.UserHomeDir()
 	filePath := filepath.Join(homeDir, music)
 	socketPath := "/tmp/mpv.sock"
 	server, client, err := gompv.StartAndConnect(context.Background(), socketPath, filePath)

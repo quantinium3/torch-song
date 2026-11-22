@@ -1,8 +1,11 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"math"
+	"os"
 
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/spinner"
@@ -29,4 +32,15 @@ func InitSpinnerAndProgress() (spinner.Model, progress.Model) {
 		progress.WithWidth(61),
 	)
 	return s, p
+}
+
+func DirExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	return false, nil
 }
